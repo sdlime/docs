@@ -36,7 +36,7 @@ The following configuration keywords would be supported
 
 To avoid further bloating C structures I propose creating a new	range (or something similar) type:
 
-enum MS_RANGE_TYPE { MS_RANGE_SCALEDENOM, MS_RANGE_GEOWIDTH, MS_RANGE_ZOOM, MS_RANGE_DEFAULT };
+enum MS_RANGE_TYPE { MS_RANGE_UNKNOWN, MS_RANGE_SCALEDENOM, MS_RANGE_GEOWIDTH, MS_RANGE_ZOOM };
 typedef struct {
   MS_RANGE_TYPE	type
   double min, max;
@@ -46,7 +46,7 @@ We'd then maintain single range	properties in the parent objects. A layer would	
 
 A positive benefit is that any range type could be used in any of the objects. Currently width ranges are only supported at the layer level. This also opens up the possibilty adding additional types over time.
 
-This approach could be used with other min/max-related keyword pairs - e.g. MIN/MAXSIZE, MIN/MAXWIDTH (type=MS_RANGE_DEFAULT) although that is beyond the scope of this RFC. 
+This approach could be used with other min/max-related keyword pairs - e.g. MIN/MAXSIZE, MIN/MAXWIDTH (type=MS_RANGE_UNKNOWN) although that is beyond the scope of this RFC. 
 
 4. Limitations
 ---------------
