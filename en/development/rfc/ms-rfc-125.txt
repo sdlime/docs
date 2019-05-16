@@ -1,0 +1,88 @@
+.. _rfc125:
+
+=========================================================================
+MS RFC 125: Tile-friendly Layer, Class, Style and Label State Management
+=========================================================================
+
+:Date: 2019-05-15
+:Author: Steve Lime
+:Contact: steve.lime@state.mn.us
+:Status: Draft
+:Last update: 2019-05-16
+:Version: (Targeting MapServer 8.0)
+
+1. Overview
+-----------
+
+MapServer contains a number of mechanisms to control the state (on/off) of layer, class, style and label objects. The most common method is using scale denominators boundaries - MINSCALEDENOM/MAXSCALEDENOM. In addition layer objects use LABELMINSCALEDENOM/LABELMAXSCALEDENOM to completely affect annotation. Another method that works only at the layer level is MINGEOWIDTH/MAXGEOWIDTH which looks at the width of the requested map extent in map units (maxx - minx). This latter method has advantage of not being tied to scale comuptation so it is stable regardless of output resolution.
+
+Unfortunately neither of these methods are particularly friendly for users developing configurations that are being used to for tile generation. While it's possible to compute scale or width boundaries that correspond to standard tile zoom levels, it's not particularly user friendly or precise. 
+
+2. Proposed solution
+--------------------
+
+In order to make configuration easier I propose adding a series of attributes to layer, class, style and label objects that would allow users to set minimum and maximum zoom levels for which an object is available. The zoom levels would correspond to the standard tile zooms levels (0-22). Using a maps computed cell size we could determine the nominal zoom level and then use that for comparisons. As with scale or width computations the range would interpreted as minzoom > zoom <= maxzoom.
+
+2.1 MapFile configuration parameters
+------------------------------------
+
+The following configuration keywords would be supported
+
+  * MINZOOM, MAXZOOM
+  * MINLABELZOOM, MAXLABELZOOM
+
+3. Implementation Details
+-------------------------
+
+To avoid further bloating C structures I propose creating a new	range (or something similar) type:
+
+enum MS_RANGE_TYPE { MS_RANGE_SCALEDENOM, MS_RANGE_GEOWIDTH, MS_RANGE_ZOOM, MS_RANGE_DEFAULT };
+typedef struct {
+  MS_RANGE_TYPE	type
+  double min, max;
+} rangeObj;
+
+We'd then maintain single range	properties in the parent objects. A layer would	have two - range and labelrange. Simple	helper functions would be developed to check a range base on the type.
+
+A positive benefit is that any range type could be used in any of the objects. Currently width ranges are only supported at the layer level. This also opens up the possibilty adding additional types over time.
+
+This approach could be used with other min/max-related keyword pairs - e.g. MIN/MAXSIZE, MIN/MAXWIDTH (type=MS_RANGE_DEFAULT) although that is beyond the scope of this RFC. 
+
+4. Limitations
+---------------
+
+TBD
+
+5. Backwards Compatibility Issues
+---------------------------------
+
+While this is largely not a breaking change within MapServer or mapfile parsing, it does represent a breaking change with respect to MapScript since I am proposing removing a attributes from layer, class, style and label structures in favor of a new object reference. Gone would be the ability to do something like $layer->{minscaledenom} = 24000. Instead we'd get/set methods tied to the underlying range object.
+
+Note that since a series of configuration keywords will populate the same underlying structure it is not possible (nor desireable) to mix range types. Once a type is encountered a subsequent type would result in a parsing error. This represents a minor change in behavior since currently scale denominator ranges take precedence over width ranges.
+
+6. Security implications
+-------------------------
+
+None anticipated.
+
+7. Performance implications
+---------------------------
+
+No significant impacts on core performance are anticipated.
+
+8. Documentation needs
+----------------------
+
+Updates to classObj and layerObj attribute lists. Updates to the mapObj CONFIG attribute to detail overriding the default zoom-level list.
+
+9. Ticket ID and references
+---------------------------
+
+* MapServer Ticket: TBD
+
+10. Voting history
+------------------
+
+Draft RFC. No vote yet.
+
+
